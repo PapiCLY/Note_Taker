@@ -1,8 +1,8 @@
-// DEPENDENCIES
+
+const express = require('express')
 const path = require('path')
 const fs = require('fs')
-const crypto = require('crypto')
-const express = require('express')
+const notes = require(path.join(__dirname, 'Develop/db/db.json'))
 const db = require(path.join(__dirname, 'Develop/db/db.json'))
 
 const PORT = process.env.PORT || 3001
@@ -20,20 +20,21 @@ app.get('/api/notes', (req, res) => {
 
 // Add route for notes.html
 app.post('/api/notes', (req, res) => {
+    const notes = JSON.parse(fs.readFileSync(path.join(__dirname, 'Develop/db/db.json')))
     const newNote = req.body
-    newNote.id = crypto.randomBytes(16).toString('hex')
-    db.push(newNote)
-    fs.writeFileSync(path.join(__dirname, 'Develop/db/db.json'), JSON.stringify(db))
-    res.json(newNote)
+    newNote.id = notes.length.toString()
+    notes.push(newNote)
+    fs.writeFileSync(path.join(__dirname, 'Develop/db/db.json'), JSON.stringify(notes))
+    res.json(notes)
 });
 
 //delete
 app.delete('/api/notes/:id', (req, res) => {
-    const id = req.params.id
-    const index = db.findIndex(note => note.id === id)
-    db.splice(index, 1)
-    fs.writeFileSync(path.join(__dirname, 'Develop/db/db.json'), JSON.stringify(db))
-    res.json(db)
+    const notes = JSON.parse(fs.readFileSync(path.join(__dirname, 'Develop/db/db.json')))
+    const deleteNote = req.params.id
+    notes.splice(deleteNote, 1)
+    fs.writeFileSync(path.join(__dirname, 'Develop/db/db.json'), JSON.stringify(notes))
+    res.json(notes)
 });
 
 app.get('/notes', (req, res) => {
