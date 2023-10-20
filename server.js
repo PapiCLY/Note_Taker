@@ -3,56 +3,47 @@ const path = require('path')
 const fs = require('fs')
 const crypto = require('crypto')
 const express = require('express')
-const db = require(path.join(__dirname, '/db/db.json'))
+const db = require(path.join(__dirname, 'Develop/db/db.json'))
 
 const PORT = process.env.PORT || 3001
 const app = express()
 
 // MIDDLEWARE
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json())
 app.use(express.static('public'))
 
 // HTTP ROUTING
-// The user is directed to the landing page.
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'))
-})
-// The user is directed to the hiNote app
-app.get('/notes', (req, res) => {
-    res.sendFile(path.join(__dirname, '/public/notes.html'))
-})
-
-// API ROUTING
-// All notes in the database are returned to the client
 app.get('/api/notes', (req, res) => {
-    res.sendFile(path.join(__dirname, '/db/db.json'))
-})
-// The request body is assigned an ID and pushed to the database
+    res.sendFile(path.join(__dirname, 'Develop/db/db.json'))
+});
+
+// Add route for notes.html
 app.post('/api/notes', (req, res) => {
-    const newNote = req.body;
-    newNote.id = crypto.randomUUID();
-    db.push(newNote);
-    writeToDB(path.join(__dirname, '/db/db.json'))
-    res.send(`POST successful!`);
-})
-// The requested ID is matched in database and removed
+    const newNote = req.body
+    newNote.id = crypto.randomBytes(16).toString('hex')
+    db.push(newNote)
+    fs.writeFileSync(path.join(__dirname, 'Develop/db/db.json'), JSON.stringify(db))
+    res.json(newNote)
+});
+
+//delete
 app.delete('/api/notes/:id', (req, res) => {
-    for (i = 0; i < db.length; i++) {
-        if (db[i].id === req.params.id) {
-            db.splice(i, 1)
-        }
-    }
-    writeToDB(path.join(__dirname, '/db/db.json'))
-    res.send("DELETED")
-})
+    const id = req.params.id
+    const index = db.findIndex(note => note.id === id)
+    db.splice(index, 1)
+    fs.writeFileSync(path.join(__dirname, 'Develop/db/db.json'), JSON.stringify(db))
+    res.json(db)
+});
 
-app.listen(PORT, () =>
-    console.log(`App listening on port ${PORT}`)
-)
+app.get('/notes', (req, res) => {
+    res.sendFile(path.join(__dirname, 'Develop/public/notes.html'))
+});
 
-// UTILITY
-// The database is formatted, converted to string, and written to file
-function writeToDB(path) {
-    const dbString = JSON.stringify(db, null, 2)
-    fs.writeFile(path, dbString, () => console.log('File write!'))
-}
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'Develop/public/index.html'))
+});
+
+app.listen(PORT, () => {
+    console.log(`API server now on port ${PORT}!`);
+});
